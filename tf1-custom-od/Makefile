@@ -5,7 +5,13 @@ build:
 	docker build . -t $(IMAGE_NAME)
 
 run:
-	docker run --rm -ti $(IMAGE_NAME) /bin/bash
+	source ./config.env && \
+	docker run --rm -ti \
+		-v $(PWD)/workspace:/root/workspace \
+		-v $(PWD)/scripts:/root/scripts \
+		--env-file ./docker.env \
+		$(IMAGE_NAME) \
+		/bin/bash
 
 getmodel:
 	source ./config.env && ./getmodel.sh
