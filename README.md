@@ -1,0 +1,1 @@
+The idea for this repo is to create a reproducible environment for Tensorflow 1 Object detection custom training.
