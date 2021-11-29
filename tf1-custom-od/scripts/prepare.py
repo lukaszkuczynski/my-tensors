@@ -21,6 +21,7 @@ IMAGES_AND_LABELS_FOLDER = os.path.join(WORKSPACE_DIR, 'images')
 IMAGES_AND_LABELS_PROJECT_FOLDER = os.path.join(IMAGES_AND_LABELS_FOLDER, PROJECT_NAME)
 LABEL_MAP_PATH = os.path.join(WORKSPACE_DIR, "labels.pbtxt")
 PRETRAINED_MODELS_FOLDER = os.path.join(WORKSPACE_DIR, "pre-trained-models")
+TRAINING_FOLDER = os.path.join(WORKSPACE_DIR, "training")
 
 def train_valid_test_split(path, split_ratio=(0.8,0.1,0.1)):
   all_images = list(os.path.basename(filename) for filename in glob.glob(os.path.join(path, "*.JPEG")))
@@ -152,11 +153,8 @@ def files_to_tfrecord(filenames, data_dir, output_path, ignore_difficult_instanc
 
 original_pipeline_path = os.path.join(PRETRAINED_MODELS_FOLDER, model_name, "pipeline.config")
 pipeline_path = os.path.join(PRETRAINED_MODELS_FOLDER, model_name, "pipeline.confignew")
-checkpoint_path = "checkpoint/ckpt-0"
 
-local_data_folder = "./source_dir"
-
-label_map_filename = "avocado_labels.pbtxt"
+checkpoint_path = os.path.join(TRAINING_FOLDER, model_name, "model.ckpt")
 
 
 def edit_pipeline_config(old_path, new_path, cfg):
@@ -177,23 +175,17 @@ def edit_pipeline_config(old_path, new_path, cfg):
 
   config_text = text_format.MessageToString(pipeline_config)                                                                                                                                                                                                        
   with compat_tf.gfile.Open(new_path, "wb") as f:                                                                                                                                                                                                                       
-      f.write(config_text)                                                                                                                                                                                                                                          
+      f.write(config_text)                                                                                                                                                                                                                                                
 
-        
-        
-
-data_folder = local_data_folder
         
 new_config = {
     "batch_size": 8,
     "num_classes": 1,
-    "label_map_path": os.path.join(data_folder, label_map_filename),
-    "train_tf_path": os.path.join(data_folder, 'train'),
-    "eval_tf_path": os.path.join(data_folder, 'valid'),
+    "label_map_path": LABEL_MAP_PATH,
+    "train_tf_path": os.path.join(tf_record_folder, 'train'),
+    "eval_tf_path": os.path.join(tf_record_folder, 'valid'),
     "fine_tune_checkpoint": checkpoint_path
 }
-
-
 
 
 

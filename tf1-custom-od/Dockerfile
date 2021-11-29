@@ -15,6 +15,7 @@ RUN protoc object_detection/protos/*.proto --python_out=.
 RUN pip install .
 
 WORKDIR /root
+ENV PYTHONPATH=$PYTHONPATH:/root/models/research/slim/
 
 COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt
