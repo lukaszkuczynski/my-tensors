@@ -39,3 +39,6 @@ tensorboard:
 
 install:
 	pip install -r requirements-tensorboard.txt
+
+rsync:
+	rsync workspace/export/frozen_inference_graph.pb jetson:/home/lukjestson/Downloads/
