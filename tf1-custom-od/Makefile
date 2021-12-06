@@ -22,6 +22,15 @@ train:
 		$(IMAGE_NAME) \
 		/root/scripts/train.sh
 
+export:
+	source ./config.env && \
+	docker run --rm -ti \
+		-v $(PWD)/workspace:/root/workspace \
+		-v $(PWD)/scripts:/root/scripts \
+		--env-file ./docker.env \
+		$(IMAGE_NAME) \
+		/root/scripts/export_graph.sh
+
 getmodel:
 	source ./config.env && ./getmodel.sh
 
