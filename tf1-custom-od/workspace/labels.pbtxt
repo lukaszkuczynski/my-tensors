@@ -1,4 +1,8 @@
 item {
   id: 1
-  name: 'avocado'
+  name: 'onion'
+}
+item {
+  id: 2
+  name: 'garlic'
 }

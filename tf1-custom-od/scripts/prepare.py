@@ -14,7 +14,8 @@ from object_detection.protos import pipeline_pb2
 
 PROJECT_NAME=os.getenv("IMAGE_PROJECT_NAME")
 model_name = os.getenv("MODEL_NAME")
-
+PICTURE_EXTENSION=os.getenv("PICTURE_EXTENSION")
+XML_EXTENSION=".xml"
 WORKSPACE_DIR = "/root/workspace/"
 
 IMAGES_AND_LABELS_FOLDER = os.path.join(WORKSPACE_DIR, 'images')
@@ -24,16 +25,21 @@ PRETRAINED_MODELS_FOLDER = os.path.join(WORKSPACE_DIR, "pre-trained-models")
 TRAINING_FOLDER = os.path.join(WORKSPACE_DIR, "training")
 
 def train_valid_test_split(path, split_ratio=(0.8,0.1,0.1)):
-  all_images = list(os.path.basename(filename) for filename in glob.glob(os.path.join(path, "*.JPEG")))
+  all_images = list(os.path.basename(filename) for filename in glob.glob(os.path.join(path, "*"+PICTURE_EXTENSION)))
+  ## sometimes images can have no XML - no boundaries, then we need to exclude it
+  print(f"All images count {len(all_images)}")
+  print(all_images[:5])
+  all_images_filtered = list(filename for filename in all_images if os.path.exists(os.path.join(path, filename.replace(PICTURE_EXTENSION, XML_EXTENSION))))
+  print(f"Images that have some labels count {len(all_images_filtered)}")
   if len(split_ratio) != 3:
     raise AttributeError("you should provide a tuple with 3 fractions for split- train,valid,test")
   if sum(split_ratio) != 1:
     raise AttributeError("Split should add up to 1.0")
-  train_len = math.floor(split_ratio[0] * len(all_images))
+  train_len = math.floor(split_ratio[0] * len(all_images_filtered))
   random.seed(10)
-  train_images = random.sample(all_images, train_len)
-  other_images = list(set(all_images) - set(train_images))
-  valid_len = math.floor(split_ratio[1] * len(all_images))
+  train_images = random.sample(all_images_filtered, train_len)
+  other_images = list(set(all_images_filtered) - set(train_images))
+  valid_len = math.floor(split_ratio[1] * len(all_images_filtered))
   valid_images = random.sample(other_images, valid_len)
   test_images = list(set(other_images) - set(valid_images))
   return train_images, valid_images, test_images
@@ -107,6 +113,8 @@ def dict_to_tf_example(data,
       truncated.append(int(obj['truncated']))
       poses.append(obj['pose'].encode('utf8'))
 
+  print(classes)
+  print(classes_text)
   example = compat_tf.train.Example(features=compat_tf.train.Features(feature={
       'image/height': dataset_util.int64_feature(height),
       'image/width': dataset_util.int64_feature(width),
@@ -134,10 +142,11 @@ def dict_to_tf_example(data,
 def files_to_tfrecord(filenames, data_dir, output_path, ignore_difficult_instances=False):
   filenames_no_extensions = [os.path.splitext(fn)[0] for fn in filenames]
   label_map_dict = label_map_util.get_label_map_dict(LABEL_MAP_PATH)
+  print(label_map_dict)
   examples = []
   with compat_tf.python_io.TFRecordWriter(output_path) as writer:
-    for idx, example in enumerate(filenames_no_extensions):
-      path = os.path.join(annotations_dir, example + '.xml')
+    for _, example in enumerate(filenames_no_extensions):
+      path = os.path.join(annotations_dir, example + XML_EXTENSION)
       with compat_tf.gfile.GFile(path, 'r') as fid:
         xml_str = fid.read()    
       xml = etree.fromstring(xml_str)
@@ -180,14 +189,24 @@ def edit_pipeline_config(old_path, new_path, cfg):
         
 new_config = {
     "batch_size": 8,
-    "num_classes": 1,
+    "num_classes": 2,
     "label_map_path": LABEL_MAP_PATH,
     "train_tf_path": os.path.join(tf_record_folder, 'train'),
     "eval_tf_path": os.path.join(tf_record_folder, 'valid'),
     "fine_tune_checkpoint": checkpoint_path
 }
 
+def clean_xml(data_dir):
+  all_xmls = list(os.path.basename(filename) for filename in glob.glob(os.path.join(data_dir, "*"+XML_EXTENSION))) 
+  for xml_filename in all_xmls:
+    xml_path = os.path.join(data_dir, xml_filename)
+    with open(xml_path) as fread:
+      xml_content = fread.read()
+      xml_content = xml_content.replace('Unspecified', '0')
+      with open(xml_path, 'w') as fwrite:
+        fwrite.write(xml_content)
 
+clean_xml(IMAGES_AND_LABELS_PROJECT_FOLDER)
 
 files_to_tfrecord(train_images, data_dir, os.path.join(tf_record_folder, 'train'))
 files_to_tfrecord(valid_images, data_dir, os.path.join(tf_record_folder, 'valid'))

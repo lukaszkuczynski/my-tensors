@@ -13,5 +13,20 @@ run:
 		$(IMAGE_NAME) \
 		/bin/bash
 
+train:
+	source ./config.env && \
+	docker run --rm -ti \
+		-v $(PWD)/workspace:/root/workspace \
+		-v $(PWD)/scripts:/root/scripts \
+		--env-file ./docker.env \
+		$(IMAGE_NAME) \
+		/root/scripts/train.sh
+
 getmodel:
 	source ./config.env && ./getmodel.sh
+
+tensorboard:
+	tensorboard --logdir ./workspace/training/ssd_mobilenet_v2_coco_2018_03_29
+
+install:
+	pip install -r requirements-tensorboard.txt
